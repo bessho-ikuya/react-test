@@ -1,0 +1,57 @@
+version: '3'
+services:
+  # nginx
+  web:
+    image: nginx
+    ports:
+      - 80:80
+    volumes:
+      - ./docker/web/conf.d:/etc/nginx/conf.d
+      - .:/var/www/html
+    depends_on:
+      - php
+    links:
+      - php
+
+  # PHP-FPM
+  php:
+    build: ./docker/php
+    environment:
+      DATABASE_HOST: db
+    volumes:
+      - .:/var/www/html
+      - ./docker/php/php.ini:/etc/php/php.ini
+    depends_on:
+      - db
+    links:
+      - db
+      # - redis
+
+  # MySQL
+  db:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: medicalmedia
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+      TZ: 'Asia/Tokyo'
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - ./docker/db/data:/var/lib/mysql
+      - ./docker/db/my.cnf:/etc/mysql/conf.d/my.cnf
+      - ./docker/db/sql:/docker-entrypoint-initdb.d
+    ports:
+      - 3306:3306
+
+  # phpMyAdmin
+  pma:
+    image: phpmyadmin/phpmyadmin:latest
+    ports:
+      - 8001:80
+    depends_on:
+      - db
+    environment:
+      MYSQL_USER: root
+      MYSQL_ROOT_PASSWORD: root
+      PMA_HOST: db
